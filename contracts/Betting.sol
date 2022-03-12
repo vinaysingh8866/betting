@@ -28,7 +28,7 @@ contract Betting{
         voted[msg.sender] = true;
     }
 
-    function getWinner() public view returns (address winner){
+    function getWinner() public returns (address winner){
 
         for(uint i =0; i < particepants.length; i++){
             require(voted[particepants[i]] == true, "Everyone has not voted");
@@ -40,12 +40,14 @@ contract Betting{
                 winner = particepants[i];
             }
         }
+        payable(winner).transfer(totalAmount);
         return winner;
     }
 
     function participate() public payable{
         require(userExists[msg.sender] == false," already participated");
         require(msg.value >= 100000000000000000 ,"not ok");
+        totalAmount = totalAmount + msg.value;
         particepants.push(msg.sender);
     }
 }
