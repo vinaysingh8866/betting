@@ -65,8 +65,9 @@ contract Betting{
 
     function transferAmount() public{
         require(msg.sender == owner, "Only owner can call");
+        uint bal = address(this).balance;
         for(uint i = 0; i<winner.length;i++){
-            (bool sent, ) = payable(winner[i]).call{value: (address(this).balance/winner.length - 10000000000000000)}("");
+            (bool sent, ) = payable(winner[i]).call{value: (bal/winner.length - 10000000000000000)}("");
             require(sent, "Failed to send Ether");
         }
         selfdestruct(payable(owner));
