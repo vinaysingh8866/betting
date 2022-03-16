@@ -2,17 +2,28 @@
 pragma solidity ^0.8.0;
 
 contract Betting{
-
-    uint totalAmount = 0;
+    uint private totalAmount = 0;
     address[] public particepants;
-    mapping(address => uint) winnerVote;
-    mapping(address => bool) voted;
-    mapping(address => bool) userExists;
-    uint state = 0;
+    mapping(address => string) private betOfPart;
+    //mapping(address => uint) private winnerVote;
+    mapping(address => bool) private voted;
+    mapping(address => bool) private userExists;
+    mapping(address => bool) private winnerExists; 
+    mapping(string => uint) private winnerCarVote;
+    string[] public cars;
+    uint private state = 0;
+    address[] public winner;
+    string private winnerCar;
+    address private owner;
 
-    constructor(){
-        
+
+    constructor(string[] memory _cars, address[] memory _participants){
+        particepants = _participants;
+        cars = _cars;
+        owner = msg.sender;
     }
+
+    
 
     receive() external payable {
         totalAmount = totalAmount+msg.value;
@@ -22,32 +33,51 @@ contract Betting{
         totalAmount = totalAmount+msg.value;
     }
 
-    function voteWinner(address winner) public{
-        uint votes = winnerVote[winner];
-        winnerVote[winner] = votes+1;
+    function voteWinner(string memory _winner) public{
+        uint votes = winnerCarVote[_winner];
+        winnerCarVote[_winner] = votes+1;
         voted[msg.sender] = true;
     }
 
-    function getWinner() public returns (address winner){
-
+    function getWinner() public returns (address[] memory _winner){
         for(uint i =0; i < particepants.length; i++){
             require(voted[particepants[i]] == true, "Everyone has not voted");
         }
         uint maxVotes;
-        for(uint i =0; i < particepants.length; i++) {
-            if(maxVotes < winnerVote[particepants[i]]){
-                maxVotes = winnerVote[particepants[i]];
-                winner = particepants[i];
+        for(uint i =0; i < cars.length; i++) {
+            if(maxVotes < winnerCarVote[cars[i]]){
+                maxVotes = winnerCarVote[cars[i]];
+                winnerCar = cars[i];
             }
         }
-        payable(winner).transfer(totalAmount);
+
+        for(uint i = 0; i< particepants.length; i++){
+            if(keccak256(abi.encodePacked(betOfPart[particepants[i]])) == keccak256(abi.encodePacked(winnerCar))){
+                if(winnerExists[particepants[i]] == false){
+                    winnerExists[particepants[i]] = true;
+                    winner.push(particepants[i]);
+                }
+            }
+        }
+
         return winner;
     }
 
-    function participate() public payable{
+    function transferAmount() public{
+        require(msg.sender == owner, "Only owner can call");
+        for(uint i = 0; i<winner.length;i++){
+            (bool sent, ) = payable(winner[i]).call{value: (address(this).balance/winner.length - 10000000000000000)}("");
+            require(sent, "Failed to send Ether");
+        }
+        selfdestruct(payable(owner));
+    }
+
+    function participate(string memory carName) public payable{
         require(userExists[msg.sender] == false," already participated");
         require(msg.value >= 100000000000000000 ,"not ok");
+        userExists[msg.sender] = true;
         totalAmount = totalAmount + msg.value;
         particepants.push(msg.sender);
+        betOfPart[msg.sender] = carName;
     }
 }

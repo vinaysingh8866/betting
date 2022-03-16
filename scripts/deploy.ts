@@ -15,7 +15,7 @@ async function main() {
 
   // We get the contract to deploy
   const Betting = await ethers.getContractFactory("Betting");
-  const betting = await Betting.deploy();
+  const betting = await Betting.deploy(["red", "blue", "green"], [""]);
 
   await betting.deployed();
 
